@@ -1,0 +1,149 @@
+IMPORTANT NOTICE:
+
+To update this zfsd repository from your FreeBSD repository,
+after running  git fetch  in your freebsd repository,
+you can simply run:
+
+    ./update.sh
+
+The first time you run it you will need to enter the path
+to your FreeBSD repository.  Subsequent runs remember the
+path you gave.  You can then run:
+
+    git log upstream/master
+
+to see the latest FreeBSD items.
+
+Read the rest of the text below to see how this works.
+
+----------
+
+This is zfsd, extracted from the FreeBSD git repository, from
+the projects/zfsd branch, with a top level Makefile added
+to build it outside the project branch.
+
+The slightly odd directory structure is a result of the way
+the SVN sources are put into the FreeBSD git repo.  We preserve
+it because this means updates to the FreeBSD project can be
+cherry-picked directly into this repository.
+
+NOTE: DO NOT USE git merge, IT WILL BLOAT THIS REPOSITORY!
+(Your fetch will also bloat up your copy of the repo; see
+"alternates" tricks below to avoid this.  However, making your
+local copy huge will not harm the version stored on github
+as long as you avoid merging the histories or pushing the
+remote-tracking branch.)
+
+NOTE: be sure to use -x when cherry-picking so that the
+upstream commit ID is put in the local commit, so that
+we can tell which commits are new.
+
+  -----------
+
+The following commands allow for direct cherry-picking.
+The drawback is that your local repo will become quite
+bloat-y (containing a full copy of freebsd):
+
+    git remote add upstream git://github.com/freebsd/freebsd.git
+    git config \
+        remote.upstream.fetch \
+        +refs/heads/projects/zfsd:refs/remotes/upstream/master
+    git fetch upstream
+
+Now `git log upstream/master` will show you all commits.  Any
+that are not already cherry-picked in can be added with:
+
+    git cherry-pick -x <sha1>
+
+  -----------
+
+HOW TO USE "git alternates" TO AVOID BLOATING THIS REPO (now
+encoded in ./update.sh):
+
+ 1) Clone the freebsd git repository, if you have not already.
+
+ 2) Set variable $FR to the path of the freebsd repository
+    (you can of course use any other variable name, or just
+    expand everything in line as needed):
+
+    set FR = .../freebsd    # csh, tcsh, etc
+    FR=.../freebsd          # sh, bash, etc
+
+ 3) Within this (zfsd) repo, create .git/objects/info/alternates:
+
+    echo $FR/.git/objects > .git/objects/info/alternates
+
+    (this step need only be done once)
+
+NOW THAT YOU HAVE alternates SET, YOU MUST CHOOSE A SECONDARY
+STRATEGY.
+
+Use just one of these 4a--4d steps.  Pick whichever one you
+prefer.  I recommend 4a as simplest, but 4c as fastest.
+
+Note that all of 4a--4c will guarantee that your local zfsd
+repository does not bloat up with irrelevant freebsd commits.
+Method 4d allows gradual bloat.
+
+ 4a) Use:
+
+	git remote add upstream $FR
+	git config \
+	    remote.upstream.fetch \
+	    +refs/remotes/origin/projects/zfsd:refs/remotes/upstream/master
+
+    Then, any time after updating your freebsd copy:
+
+	git fetch upstream
+	git log upstream/master
+
+    The alternates will prevent any objects from being fetched,
+    and "upstream/master" will update automatically.  This
+    is by far the easiest method to use, but each "git fetch "
+    is very slow.
+
+ 4b) Simply use:
+
+	git -C $FR log origin/projects/zfsd
+
+    to find commits to cherry-pick.  Now there is no need
+    to update your own repo; the drawback here is that
+    you need to spell out the -C option and the longer
+    "projects" remote-tracking branch name.
+
+ 4c) Add or update the remote-branch reference manually:
+
+	git update-ref refs/remotes/upstream/master \
+	    $(git -C $(git config --get remote.upstream.url) \
+		rev-parse remotes/origin/projects/zfsd)
+	git log upstream/master
+
+    You may now use "git log upstream/master" (as shown here)
+    to see if there are new commits to cherry-pick.
+
+    The drawback here is that you must repeat the update-ref
+    command whenever the freebsd repository is updated (in
+    case its origin/projects/zfsd has moved).  The syntax
+    is sh/bash-specific as well ($(...) is not available in
+    csh/tcsh).
+
+ 4d) Or, you can now add the github freebsd repo directly:
+
+	git remote add upstream git://github.com/freebsd/freebsd.git
+	git config \
+	    remote.upstream.fetch \
+	    +refs/heads/projects/zfsd:refs/remotes/upstream/master
+
+    (note the slightly different refspec vs method (4a)).
+
+    Now at any time you may use:
+
+	git fetch upstream
+	git log upstream/master
+
+    If you have not updated your local freebsd repository, this
+    will add some objects to this (zfsd) repository, increasing
+    your local repository size somewhat.  It's also as slow as
+    method (4a).  The one advantage is that you don't have to
+    update your freebsd repository before doing "git fetch
+    upstream".
