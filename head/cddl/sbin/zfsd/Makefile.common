@@ -30,6 +30,7 @@ INCFLAGS+= -I${SRCDIR}/sys/cddl/contrib/opensolaris/common/zfs
 INCFLAGS+= -I${SRCDIR}/sys/cddl/contrib/opensolaris/uts/common
 INCFLAGS+= -I${SRCDIR}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs
 INCFLAGS+= -I${SRCDIR}/sys/cddl/contrib/opensolaris/uts/common/sys
+INCFLAGS+= -I${SRCDIR}/cddl/contrib/opensolaris/lib/libzfs_core/common
 
 CFLAGS= -g -DNEED_SOLARIS_BOOLEAN ${INCFLAGS}
 
